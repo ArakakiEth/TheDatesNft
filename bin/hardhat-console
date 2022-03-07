@@ -1,0 +1,4 @@
+#!/usr/bin/env sh
+
+docker exec -it hardhat-node sh -c "npm run console"
+

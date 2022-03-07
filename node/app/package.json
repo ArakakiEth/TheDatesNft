@@ -4,10 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "logs": "docker logs -f hardhat-node",
-    "console": "docker exec -it hardhat-node sh -c 'npx hardhat --network localhost console'",
-    "test-the-dates-nft": "docker exec hardhat-node sh -c 'npx hardhat clean && npx hardhat test /root/app/test/the-dates-nft-test.js'",
-    "deploy-the-dates-nft": "docker exec -it hardhat-node sh -c 'npx hardhat --network localhost run scripts/deploy-the-dates-nft.js'"
+    "console": "npx hardhat --network localhost console",
+    "test-the-dates-nft": "npx hardhat test /root/app/test/the-dates-nft-test.js",
+    "deploy-the-dates-nft": "npx hardhat --network localhost run scripts/deploy-the-dates-nft.js"
   },
   "author": "",
   "license": "ISC",
