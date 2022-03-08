@@ -13,15 +13,31 @@ describe("TheDatesNft", () => {
   beforeEach(async () => {
     signers = await ethers.getSigners();
 
-    const contractFactory = await ethers.getContractFactory("TheDatesNft", {
-      signer: signers[0],
-    });
+    const deployContract = async (contractName, libraries) => {
+      const factory = await ethers.getContractFactory(contractName, {
+        signer: signers[0],
+        libraries: (libraries || {}),
+      });
 
-    contract = await contractFactory.deploy();
+      const contract = await factory.deploy();
 
-    await contract.deployed();
+      await contract.deployed();
+
+      return contract;
+    };
+
+    contract = await deployContract("TheDatesNft");
   });
 
+  it("should be able to deployed", async () => {
+    await contract.deployed();
+
+    await contract.claim();
+
+    const token = await contract.getToken(0);
+
+    console.log({ token });
+  });
   /*
   it("can be claimed only by contract owner by default", async () => {
     await contract.deployed();
@@ -217,6 +233,7 @@ describe("TheDatesNft", () => {
   });
   */
 
+  /*
   it("should be able to set color", async () => {
     await contract.deployed();
 
@@ -246,6 +263,7 @@ describe("TheDatesNft", () => {
       // expect(colors).to.eql(data.expectedColors);
     }
   });
+  */
 
   /*
   it("should serve token uri", async () => {
