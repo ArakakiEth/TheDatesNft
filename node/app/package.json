@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "console": "npx hardhat --network localhost console",
-    "test-the-dates-nft": "npx hardhat test /root/app/test/the-dates-nft-test.js",
+    "test-the-dates-nft": "npx hardhat test --show-stack-traces /root/app/test/the-dates-nft-test.js",
     "deploy-the-dates-nft": "npx hardhat --network localhost run scripts/deploy-the-dates-nft.js"
   },
   "author": "",

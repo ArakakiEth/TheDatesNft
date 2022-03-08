@@ -11,57 +11,18 @@ describe("TheDatesNft", () => {
   let signers;
 
   beforeEach(async () => {
-    const colorLibFactory = await ethers.getContractFactory("Color");
-
-    const colorLib = await colorLibFactory.deploy();
-
-    await colorLib.deployed();
-
-    const numberLibFactory = await ethers.getContractFactory("Number");
-
-    const numberLib = await numberLibFactory.deploy();
-
-    await numberLib.deployed();
-
-    const dateLibFactory = await ethers.getContractFactory("Date");
-
-    const dateLib = await dateLibFactory.deploy();
-
-    await dateLib.deployed();
-
-    const imageLibFactory = await ethers.getContractFactory("Image", {
-      libraries: {
-        // "Number": numberLib.address,
-      },
-    });
-
-    const imageLib = await imageLibFactory.deploy();
-
-    await imageLib.deployed();
-
-    const messageLibFactory = await ethers.getContractFactory("Message");
-
-    const messageLib = await messageLibFactory.deploy();
-
-    await messageLib.deployed();
+    signers = await ethers.getSigners();
 
     const contractFactory = await ethers.getContractFactory("TheDatesNft", {
-      libraries: {
-        "Color": colorLib.address,
-        "Date": dateLib.address,
-        "Image": imageLib.address,
-        "Message": messageLib.address,
-        "Number": numberLib.address,
-      },
+      signer: signers[0],
     });
 
     contract = await contractFactory.deploy();
 
     await contract.deployed();
-
-    signers = await ethers.getSigners();
   });
 
+  /*
   it("can be claimed only by contract owner by default", async () => {
     await contract.deployed();
 
@@ -80,7 +41,9 @@ describe("TheDatesNft", () => {
       }
     }
   });
+  */
 
+  /*
   it("can be claimed when set as claimable.", async () => {
     await contract.deployed();
 
@@ -92,7 +55,9 @@ describe("TheDatesNft", () => {
 
     expect(result).not.to.be.an.instanceof(Error);
   });
+  */
 
+  /*
   it("should increment token id after claiming", async () => {
     await contract.deployed();
 
@@ -101,12 +66,12 @@ describe("TheDatesNft", () => {
 
       const tokenId = await contract.currentTokenId();
 
-      console.log(claimCount, tokenId);
-
       expect(tokenId).to.equal(claimCount.toString(10));
     }
   });
+  */
 
+  /*
   it("should return date by token id", async () => {
     await contract.deployed();
 
@@ -120,7 +85,9 @@ describe("TheDatesNft", () => {
 
     expect(date).to.equal("20220305");
   });
+  */
 
+  /*
   it("should accept request to set date only from the token owner", async () => {
     await contract.deployed();
 
@@ -136,7 +103,9 @@ describe("TheDatesNft", () => {
 
     expect(result).to.be.an.instanceof(Error);
   });
+  */
 
+  /*
   it("should accept only yyyyMMdd format date", async () => {
     await contract.deployed();
 
@@ -185,7 +154,9 @@ describe("TheDatesNft", () => {
       }
     }
   });
+  */
 
+  /*
   it("should not be able to reset date", async () => {
     await contract.deployed();
 
@@ -201,7 +172,9 @@ describe("TheDatesNft", () => {
 
     expect(result).to.be.an.instanceof(Error);
   });
+  */
 
+  /*
   it("should not have duplicated date", async () => {
     await contract.deployed();
 
@@ -221,7 +194,9 @@ describe("TheDatesNft", () => {
 
     expect(result).to.be.an.instanceof(Error);
   });
+  */
 
+  /*
   it("should be able to set message", async () => {
     await contract.deployed();
 
@@ -240,25 +215,39 @@ describe("TheDatesNft", () => {
       expect(message).to.equal(data.expectedMessage);
     }
   });
+  */
 
   it("should be able to set color", async () => {
     await contract.deployed();
 
-    await contract.claim();
+    for (const data of [
+      { requestColors: ["#ffffff", "#ff3333", "#3333ff"], isValid: true, expectedColors: ["#ffffff", "#ff3333", "#3333ff"] },
+      { requestColors: ["ffffff", "ff3333", "3333ff"], isValid: false, expectedColors: ["#edc271", "#e9435e", "#6868ac"] },
+      { requestColors: ["#ffffff", "", ""], isValid: false, expectedColors: ["#edc271", "#e9435e", "#6868ac"] },
+      { requestColors: ["#fff", "#f33", "#33f"], isValid: false, expectedColors: ["#edc271", "#e9435e", "#6868ac"] },
+      { requestColors: [], isValid: false, expectedColors: ["#edc271", "#e9435e", "#6868ac"] },
+    ]) {
+      await contract.claim();
 
-    const tokenId = await contract.currentTokenId();
+      const tokenId = await contract.currentTokenId();
 
-    await contract.setColors(tokenId, [
-      "#ffffff",
-      "#ff3333",
-      "#3333ff",
-    ]);
+      const result = await contract.setColors(tokenId, data.requestColors).catch((err) => {
+        return err;
+      });
 
-    const colors = await contract.colors(tokenId);
+      if (data.isValid) {
+        expect(result).not.to.be.an.instanceof(Error, JSON.stringify({ data }));
+      } else {
+        expect(result).to.be.an.instanceof(Error, JSON.stringify({ data }));
+      }
 
-    expect(message).to.equal(data.expectedMessage);
+      // const colors = await contract.colors(tokenId);
+
+      // expect(colors).to.eql(data.expectedColors);
+    }
   });
 
+  /*
   it("should serve token uri", async () => {
     await contract.deployed();
 
@@ -270,5 +259,6 @@ describe("TheDatesNft", () => {
 
     // console.log({ tokenUri });
   });
+  */
 });
 

@@ -1,32 +1,80 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "./utils/Color.sol";
-import "./utils/Date.sol";
-import "./utils/Image.sol";
-import "./utils/Message.sol";
-import "./utils/Number.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/utils/Base64.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "hardhat/console.sol";
 
+struct Token {
+    string date;
+    string message;
+    address messageWriter;
+    string backgroundColor;
+    string dateTextColor;
+    string messageTextColor;
+}
+
+library ColorLib {
+    function setBackgroundColor(Token memory token, string memory colorString) external {
+        require(_validateColorString(colorString), "Invalid color string format. It should be like #ff3366");
+
+        token.backgroundColor = colorString;
+    }
+
+    function setDateTextColor(Token memory token, string memory colorString) external {
+        require(_validateColorString(colorString), "Invalid color string format. It should be like #ff3366");
+
+        token.dateTextColor = colorString;
+    }
+
+    function setMessageTextColor(Token memory token, string memory colorString) external {
+        require(_validateColorString(colorString), "Invalid color string format. It should be like #ff3366");
+
+        token.messageTextColor = colorString;
+    }
+
+    function _validateColorString(string memory colorString) private pure returns (bool) {
+        bytes memory colorStringBytes = bytes(colorString);
+
+        if (colorStringBytes.length != 7) {
+            return false;
+        }
+
+        if (colorStringBytes[0] != 0x23) {
+            return false;
+        }
+
+        for (uint index = 1; index < 7; index++) {
+            bytes1 char = colorStringBytes[index];
+
+            bool isValid = false;
+
+            isValid = isValid || (char == 0x30 || char == 0x31 || char == 0x32 || char == 0x33 || char == 0x34 || char == 0x35 || char == 0x36 || char == 0x37 || char == 0x38 || char == 0x39);
+            isValid = isValid || (char == 0x61 || char == 0x62 || char == 0x63 || char == 0x64 || char == 0x65 || char == 0x66);
+
+            if (!isValid) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
 contract TheDatesNft is ERC721Enumerable, Ownable {
+    using ColorLib for Token;
+
     address private _contractOwner;
 
     bool private _isClaimable;
 
     uint private _currentTokenId;
 
-    mapping(uint => string) private _tokenIdDateMap;
     mapping(string => uint) private _dateTokenIdMap;
 
-    mapping(uint => string) private _tokenIdMessageMap;
-    mapping(uint => address) private _tokenIdMessageWriterMap;
-
-    mapping(uint => string[3]) private _tokenIdColorsMap;
+    mapping(uint => Token) private _tokenIdTokenMap;
 
     constructor() ERC721("The Dates", "DTS") {
         _contractOwner = _msgSender();
@@ -36,121 +84,18 @@ contract TheDatesNft is ERC721Enumerable, Ownable {
         _currentTokenId = 0;
     }
 
-    function tokenURI(uint tokenId) public view override returns (string memory) {
-        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
+    function setColors(uint tokenId, string[3] memory _colors) external {
+        Token memory token = _tokenIdTokenMap[tokenId];
 
-        bytes memory year = bytes("-");
-        bytes memory month = bytes("-");
-        bytes memory dayOfMonth = bytes("-");
+        token.setBackgroundColor(_colors[0]);
+        token.setDateTextColor(_colors[0]);
+        token.setMessageTextColor(_colors[0]);
 
-        bytes memory _date = bytes(_tokenIdDateMap[tokenId]);
+        console.logString(token.backgroundColor);
+        console.logString(token.dateTextColor);
+        console.logString(token.messageTextColor);
 
-        if (_date.length == 8) {
-            year = bytes.concat(bytes(""), _date[0]);
-            year = bytes.concat(year, _date[1]);
-            year = bytes.concat(year, _date[2]);
-            year = bytes.concat(year, _date[3]);
-
-            month = bytes.concat(bytes(""), _date[4]);
-            month = bytes.concat(month, _date[5]);
-
-            dayOfMonth = bytes.concat(bytes(""), _date[6]);
-            dayOfMonth = bytes.concat(dayOfMonth, _date[7]);
-        }
-
-        bytes memory json;
-
-        json = bytes.concat(json, bytes("{"));
-        json = bytes.concat(json, bytes("\"name\":\"TheDatesNft #"), Number.uintToStringBytes(tokenId), bytes("\","));
-        json = bytes.concat(json, bytes("\"image\":\"data:image/svg+xml;base64,"), bytes(Base64.encode(Image.generateSVG())), bytes("\","));
-        json = bytes.concat(json, bytes("\"attributes\":["));
-        json = bytes.concat(json, bytes("{"));
-        json = bytes.concat(json, bytes("\"trait_type\":\"year\","));
-        json = bytes.concat(json, bytes("\"value\":\""), year, bytes("\""));
-        json = bytes.concat(json, bytes("},"));
-        json = bytes.concat(json, bytes("{"));
-        json = bytes.concat(json, bytes("\"trait_type\":\"month\","));
-        json = bytes.concat(json, bytes("\"value\":\""), month, bytes("\""));
-        json = bytes.concat(json, bytes("},"));
-        json = bytes.concat(json, bytes("{"));
-        json = bytes.concat(json, bytes("\"trait_type\":\"day_of_month\","));
-        json = bytes.concat(json, bytes("\"value\":\""), dayOfMonth, bytes("\""));
-        json = bytes.concat(json, bytes("}"));
-        json = bytes.concat(json, bytes("]"));
-        json = bytes.concat(json, bytes("}"));
-
-        return string(json);
-    }
-
-    function currentTokenId() external view returns (uint) {
-        return _currentTokenId;
-    }
-
-    function date(uint tokenId) external view returns (string memory) {
-        return _tokenIdDateMap[tokenId];
-    }
-
-    function message(uint tokenId) external view returns (string memory) {
-        return _tokenIdMessageMap[tokenId];
-    }
-
-    function messageWriter(uint tokenId) external view returns (address) {
-        return _tokenIdMessageWriterMap[tokenId];
-    }
-
-    function colors(uint tokenId) public view returns (string[3] memory) {
-        string[3] memory _colors = _tokenIdColorsMap[tokenId];
-
-        if (_colors.length > 0) {
-            return _colors;
-        }
-
-        return ["#edc271", "#e9435e", "#edc271"];
-    }
-
-    function claim() external {
-        require(_msgSender() == owner() || _isClaimable, "The token is not claimable now.");
-
-        _currentTokenId = _currentTokenId + 1;
-
-        _safeMint(_msgSender(), _currentTokenId);
-    }
-
-    function isClaimable() external view returns (bool) {
-        return _isClaimable;
-    }
-
-    function setIsClaimable(bool __isClaimable) external {
-        require(_msgSender() == _contractOwner, "This function should be called by contract owner.");
-
-        _isClaimable = __isClaimable;
-    }
-
-    function setDate(uint tokenId, string calldata dateString) external {
-        require(ownerOf(tokenId) == _msgSender(), "The token is not owned by the address");
-        require(keccak256(bytes(_tokenIdDateMap[tokenId])) == keccak256(bytes("")), "The date has been already set.");
-        require(_dateTokenIdMap[dateString] == 0, "The date has already been taken.");
-        require(Date.validateDateString(dateString), "Invalid date string format. It should be yyyyMMdd.");
-
-        _tokenIdDateMap[tokenId] = dateString;
-
-        _dateTokenIdMap[dateString] = tokenId;
-    }
-
-    function setMessage(uint tokenId, string calldata messageString) external {
-        require(ownerOf(tokenId) == _msgSender(), "The token is not owned by the address");
-
-        _tokenIdMessageMap[tokenId] = Message.normalizeMessageString(messageString);
-
-        _tokenIdMessageWriterMap[tokenId] = _msgSender();
-    }
-
-    function setColors(uint tokenId, string[] calldata _colors) external {
-        string[] memory __colors;
-
-        if (_colors.length >= 1) {
-            Color.validateColorString(_colors[0]);
-        }
+        _tokenIdTokenMap[tokenId] = token;
     }
 }
 
