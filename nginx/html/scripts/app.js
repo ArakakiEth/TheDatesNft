@@ -4,34 +4,40 @@ class App extends EventTarget {
 
     this.config = config;
 
-    this.contract = {};
+    this.contracts = {};
 
-    const walletAvailable = this.checkWallet();
-
-    if (walletAvailable) {
-      this.requestPolygonNetwork();
-
-      this.config?.ethereum?.on("networkChanged", (networkId) => {
-        this.dispatchEvent(new CustomEvent("NetworkChanged"));
-      });
-    }
+    this.userAddress = null;
   }
 
-  checkWallet() {
+  async requestWallet() {
     if (this.config?.ethereum) {
-      this.dispatchEvent(new CustomEvent("WalletCheckSucceeded"));
+      this.config.ethereum.on("chainChanged", (networkId) => {
+        this.dispatchEvent(new CustomEvent("ChainChanged"));
+      });
 
-      return true;
+      const accounts = await ethereum.request({
+        method: "eth_requestAccounts",
+      }).catch((err) => {
+        console.error({ error: err });
+
+        return [];
+      });
+
+      if (!accounts[0]) {
+        return this.dispatchEvent(new CustomEvent("WalletRequestFailed"));
+      }
+
+      this.userAddress = accounts[0];
+
+      return this.dispatchEvent(new CustomEvent("WalletRequestSucceeded"));
     } else {
-      this.dispatchEvent(new CustomEvent("WalletCheckFailed"));
-
-      return false;
+      return this.dispatchEvent(new CustomEvent("WalletRequestFailed"));
     }
   }
 
   async requestPolygonNetwork() {
     if (this.config?.ethereum?.chainId === "0x89") {
-      return this.dispatchEvent(new CustomEvent("NetworkCheckSucceeded"));
+      return this.dispatchEvent(new CustomEvent("NetworkRequestSucceeded"));
     }
 
     const err = await this.config?.ethereum?.request({
@@ -46,13 +52,17 @@ class App extends EventTarget {
     });
 
     if (!err) {
-      return this.dispatchEvent(new CustomEvent("NetworkCheckSucceeded"));
+      return this.dispatchEvent(new CustomEvent("NetworkRequestSucceeded"));
     } else {
-      return this.dispatchEvent(new CustomEvent("NetworkCheckFailed"));
+      return this.dispatchEvent(new CustomEvent("NetworkRequestFailed"));
     }
   }
 
   async getTheDatesNftContract() {
+    if (this.contracts.TheDatesNft) {
+      return this.dispatchEvent(new CustomEvent("TheDatesNftContractGetSucceeded"));
+    }
+
     const abiResponse = await fetch("../data/the-dates-nft-abi.json");
 
     if (!abiResponse.ok) {
@@ -61,9 +71,7 @@ class App extends EventTarget {
 
     const abi = await abiResponse.json();
 
-    const web3 = this.config?.web3;
-
-    this.contract.TheDatesNft = new web3.eth.Contract(abi, this.config?.contractAddresses?.TheDatesNft);
+    this.contracts.TheDatesNft = new (this.config?.web3).eth.Contract(abi, this.config?.contractAddresses?.TheDatesNft);
 
     return this.dispatchEvent(new CustomEvent("TheDatesNftContractGetSucceeded"));
   }

@@ -8,9 +8,11 @@
   </head>
 
   <body>
-    <script src="//cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
-    <script src="//cdn.jsdelivr.net/npm/bignumber.js@9.0.2/bignumber.min.js"></script>
-    <script src="./scripts/app.js"></script>
+    <h1 class="page-title">
+      TheDatesNft
+    </h1>
+
+    <div id="tokens-container" class="tokens-container"></div>
 
     <div id="wallet-unavailable-layer" class="wallet-unavailable-layer">
       <div class="wallet-unavailable-dialog">
@@ -42,51 +44,123 @@
       </div>
     </div>
 
+    <script src="//cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <script src="//cdn.jsdelivr.net/npm/bignumber.js@9.0.2/bignumber.min.js"></script>
+    <script src="./scripts/app.js"></script>
+
     <script>
     window.addEventListener("DOMContentLoaded", async (event) => {
+      const tokensContainer = document.querySelector("#tokens-container");
       const walletUnavailableLayer = document.querySelector("#wallet-unavailable-layer");
       const networkUnavailableLayer = document.querySelector("#network-unavailable-layer");
       const requestPolygonNetworkButton = document.querySelector("#request-polygon-network-button");
 
+      const web3 = new Web3(ethereum);
+
       const app = new App({
         ethereum: ethereum,
-        web3: new Web3(ethereum),
+        web3: web3,
         contractAddresses: {
           TheDatesNft: "0x579e536aa20a43122647aa470fc89913a1baae71",
         },
       });
 
-      app.addEventListener("WalletCheckSucceeded", (event) => {
+      app.addEventListener("WalletRequestSucceeded", (event) => {
         walletUnavailableLayer.style.display = "none";
 
         app.requestPolygonNetwork();
       });
 
-      app.addEventListener("WalletCheckFailed", (event) => {
+      app.addEventListener("WalletRequestFailed", (event) => {
         walletUnavailableLayer.style.display = "";
       });
 
-      app.addEventListener("NetworkCheckSucceeded", (event) => {
+      app.addEventListener("NetworkRequestSucceeded", (event) => {
         networkUnavailableLayer.style.display = "none";
 
         app.getTheDatesNftContract();
       });
 
-      app.addEventListener("NetworkCheckFailed", (event) => {
+      app.addEventListener("NetworkRequestFailed", (event) => {
         networkUnavailableLayer.style.display = "";
       });
 
-      app.addEventListener("NetworkChanged", (event) => {
+      app.addEventListener("ChainChanged", (event) => {
         networkUnavailableLayer.style.display = "";
 
         app.requestPolygonNetwork();
+      });
+
+      app.addEventListener("TheDatesNftContractGetSucceeded", async (event) => {
+        let index = 0;
+
+        while (true) {
+          console.log(app.userAddress, index);
+          const tokenId = await app.contracts.TheDatesNft.methods.tokenOfOwnerByIndex(app.userAddress, index).call().catch((err) => {
+            return null;
+          });
+
+          if (!tokenId) {
+            break;
+          }
+
+          tokensContainer.dispatchEvent(new CustomEvent("TokenIdFetched", {
+            detail: {
+              tokenId: Number.parseInt(tokenId),
+            },
+          }));
+
+          index = index + 1;
+        }
+      });
+
+      app.addEventListener("TheDatesNftContractGetFailed", (event) => {
+      });
+
+      tokensContainer.addEventListener("TokenIdFetched", async (event) => {
+        const tokenURIString = await app.contracts.TheDatesNft.methods.tokenURI(event.detail.tokenId).call().catch((err) => {
+          return null;
+        });
+
+        if (!tokenURIString) {
+          return;
+        }
+
+        const tokenURI = JSON.parse(tokenURIString);
+
+        tokensContainer.appendChild((() => {
+          const tokenContainer = document.createElement("div");
+
+          tokenContainer.classList.add("token-container");
+          tokenContainer.style.order = -1 * event.detail.tokenId;
+
+          tokenContainer.appendChild((() => {
+            const imagePreview = document.createElement("img");
+
+            imagePreview.src = tokenURI.image;
+            imagePreview.classList.add("token-image-preview");
+
+            return imagePreview;
+          })());
+
+          tokenContainer.appendChild((() => {
+            const nameText = document.createElement("p");
+
+            nameText.textContent = tokenURI.name;
+            nameText.classList.add("token-name-text");
+
+            return nameText;
+          })());
+
+          return tokenContainer;
+        })());
       });
 
       requestPolygonNetworkButton.addEventListener("click", (event) => {
         app.requestPolygonNetwork();
       });
 
-      app.checkWallet();
+      app.requestWallet();
     });
     </script>
   </body>
