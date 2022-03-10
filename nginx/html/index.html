@@ -4,15 +4,82 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
 
-    <style>
-    </style>
+    <link rel="stylesheet" href="./styles/style.css">
   </head>
 
   <body>
     <script src="//cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
     <script src="//cdn.jsdelivr.net/npm/bignumber.js@9.0.2/bignumber.min.js"></script>
+    <script src="./scripts/app.js"></script>
+
+    <div id="wallet-unavailable-layer" class="wallet-unavailable-layer">
+      <div class="wallet-unavailable-dialog">
+        <h2 class="wallet-unavailable-dialog-title">
+          Wallet Unavailable
+        </h2>
+
+        <p class="wallet-unavailable-dialog-text">
+          Please intall
+          <a href="https://metamask.io/" target="_blank">
+            Metamask
+          </a>
+          .
+        </p>
+      </div>
+    </div>
+
+    <div id="network-unavailable-layer" class="network-unavailable-layer">
+      <div class="network-unavailable-dialog">
+        <h2 class="network-unavailable-dialog-title">
+          Network Unavailable
+        </h2>
+
+        <p class="network-unavailable-dialog-text">
+          <button id="request-polygon-network-button" class="request-polygon-network-button">
+            Switch Network
+          </button>
+        </p>
+      </div>
+    </div>
 
     <script>
+    window.addEventListener("DOMContentLoaded", async (event) => {
+      const walletUnavailableLayer = document.querySelector("#wallet-unavailable-layer");
+      const networkUnavailableLayer = document.querySelector("#network-unavailable-layer");
+      const requestPolygonNetworkButton = document.querySelector("#request-polygon-network-button");
+
+      const app = new App();
+
+      app.addEventListener("WalletCheckSucceeded", (event) => {
+        walletUnavailableLayer.style.display = "none";
+
+        app.requestPolygonNetwork();
+      });
+
+      app.addEventListener("WalletCheckFailed", (event) => {
+        walletUnavailableLayer.style.display = "";
+      });
+
+      app.addEventListener("NetworkCheckSucceeded", (event) => {
+        networkUnavailableLayer.style.display = "none";
+      });
+
+      app.addEventListener("NetworkCheckFailed", (event) => {
+        networkUnavailableLayer.style.display = "";
+      });
+
+      app.addEventListener("NetworkChanged", (event) => {
+        networkUnavailableLayer.style.display = "";
+
+        app.requestPolygonNetwork();
+      });
+
+      requestPolygonNetworkButton.addEventListener("click", (event) => {
+        app.requestPolygonNetwork();
+      });
+
+      app.checkWallet();
+    });
     </script>
   </body>
 </html>

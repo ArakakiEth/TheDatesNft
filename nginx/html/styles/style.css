@@ -1,0 +1,66 @@
+body {
+  margin: 0;
+  font-family: Roboto,-apple-system,Helvetica Neue,Helvetica,Arial,sans-serif;
+}
+
+.wallet-unavailable-layer,
+.network-unavailable-layer {
+  position: fixed;
+  justify-content: center;
+  align-items: center;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.wallet-unavailable-layer {
+  z-index: 99;
+}
+
+.network-unavailable-layer {
+  z-index: 98;
+}
+
+.wallet-unavailable-dialog,
+.network-unavailable-dialog {
+  padding: 24px 48px;
+  background-color: #ffffff;
+  border-radius: 24px;
+}
+
+.wallet-unavailable-dialog-title,
+.network-unavailable-dialog-title {
+  margin: 0;
+  font-size: 24px;
+}
+
+.wallet-unavailable-dialog-text,
+.network-unavailable-dialog-text {
+  margin: 24px 0 0;
+  font-size: 16px;
+}
+
+.request-polygon-network-button {
+  display: block;
+  padding: 12px;
+  width: 100%;
+  background-color: #4b9b69;
+  border: none;
+  color: #ffffff;
+  font-size: 20px;
+  font-weight: 800;
+  cursor: pointer;
+  transition-duration: .2s;
+}
+
+.request-polygon-network-button:hover {
+  transform: scale(1.02) translate(0, 2px);
+}
+
+.request-polygon-network-button:active {
+  transform: scale(.98) translate(0, 2px);
+}
+

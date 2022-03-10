@@ -1,4 +1,0 @@
-#!/usr/bin/env sh
-
-docker compose run --rm node sh -c "npm run deploy-the-dates-nft"
-

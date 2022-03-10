@@ -2,73 +2,22 @@
 pragma solidity 0.8.4;
 
 import "./lib/Token.sol";
+import "./lib/TokenTrait.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-
-import "hardhat/console.sol";
-
-// library ColorLib {
-//     function setBackgroundColor(Token memory token, string memory colorString) external {
-//         require(_validateColorString(colorString), "Invalid color string format. It should be like #ff3366");
-// 
-//         token.backgroundColor = colorString;
-//     }
-// 
-//     function setDateTextColor(Token memory token, string memory colorString) external {
-//         require(_validateColorString(colorString), "Invalid color string format. It should be like #ff3366");
-// 
-//         token.dateTextColor = colorString;
-//     }
-// 
-//     function setMessageTextColor(Token memory token, string memory colorString) external {
-//         require(_validateColorString(colorString), "Invalid color string format. It should be like #ff3366");
-// 
-//         token.messageTextColor = colorString;
-//     }
-// 
-//     function _validateColorString(string memory colorString) private pure returns (bool) {
-//         bytes memory colorStringBytes = bytes(colorString);
-// 
-//         if (colorStringBytes.length != 7) {
-//             return false;
-//         }
-// 
-//         if (colorStringBytes[0] != 0x23) {
-//             return false;
-//         }
-// 
-//         for (uint index = 1; index < 7; index++) {
-//             bytes1 char = colorStringBytes[index];
-// 
-//             bool isValid = false;
-// 
-//             isValid = isValid || (char == 0x30 || char == 0x31 || char == 0x32 || char == 0x33 || char == 0x34 || char == 0x35 || char == 0x36 || char == 0x37 || char == 0x38 || char == 0x39);
-//             isValid = isValid || (char == 0x61 || char == 0x62 || char == 0x63 || char == 0x64 || char == 0x65 || char == 0x66);
-// 
-//             if (!isValid) {
-//                 return false;
-//             }
-//         }
-// 
-//         return true;
-//     }
-// }
 
 contract TheDatesNft is ERC721Enumerable, Ownable {
-    address private _contractOwner;
-
-    bool private _isClaimable;
+    using TokenTrait for Token.Token;
 
     uint private _currentTokenId;
+
+    bool private _isClaimable;
 
     mapping(string => uint) private _dateTokenIdMap;
 
     mapping(uint => Token.Token) private _tokenIdTokenMap;
 
-    constructor() ERC721("The Dates", "DTS") {
-        _contractOwner = _msgSender();
-
+    constructor() ERC721("TheDatesNft", "TDN") {
         _isClaimable = false;
 
         _currentTokenId = 0;
@@ -86,31 +35,82 @@ contract TheDatesNft is ERC721Enumerable, Ownable {
             messageTextColor: "#6868ac"
         });
 
+        _currentTokenId = _currentTokenId + 1;
+
         _tokenIdTokenMap[_currentTokenId] = token;
 
         _safeMint(_msgSender(), _currentTokenId);
-
-        _currentTokenId = _currentTokenId + 1;
     }
 
-    function getToken(uint tokenId) external view returns (Token.Token memory) {
-       Token.Token memory token = _tokenIdTokenMap[tokenId];
+    function tokenURI(uint tokenId) public view override returns (string memory) {
+        require(_exists(tokenId), "ERC721Metadata: URI query for nonexistent token");
 
-       return token;
+        Token.Token memory token = _tokenIdTokenMap[tokenId];
+
+        bool isPresent = (token.messageWriter != address(0)) && (token.messageWriter != ownerOf(tokenId));
+
+        return token.generateTokenURI(tokenId, isPresent);
     }
 
-    // function setColors(uint tokenId, string[3] memory _colors) external {
-    //     Token memory token = _tokenIdTokenMap[tokenId];
+    function getCurrentTokenId() external view returns (uint) {
+        return _currentTokenId;
+    }
 
-    //     token.setBackgroundColor(_colors[0]);
-    //     token.setDateTextColor(_colors[0]);
-    //     token.setMessageTextColor(_colors[0]);
+    function setIsClaimable(bool __isClaimable) external {
+        require(_msgSender() == owner(), "This function should be called by contract owner.");
 
-    //     console.logString(token.backgroundColor);
-    //     console.logString(token.dateTextColor);
-    //     console.logString(token.messageTextColor);
+        _isClaimable = __isClaimable;
+    }
 
-    //     _tokenIdTokenMap[tokenId] = token;
-    // }
+    function getDate(uint tokenId) external view returns (string memory) {
+        Token.Token memory token = _tokenIdTokenMap[tokenId];
+
+        return token.date;
+    }
+
+    function setDate(uint tokenId, string calldata date) external {
+        require(_msgSender() == ownerOf(tokenId), "The token is not owned by the address.");
+        require(_dateTokenIdMap[date] == 0, "The date has already been taken.");
+
+        Token.Token storage token = _tokenIdTokenMap[tokenId];
+
+        token.setDate(date);
+
+        _dateTokenIdMap[date] = tokenId;
+    }
+
+    function getMessage(uint tokenId) external view returns (string memory) {
+        Token.Token memory token = _tokenIdTokenMap[tokenId];
+
+        return token.getMessage();
+    }
+
+    function setMessage(uint tokenId, string calldata message) external {
+        Token.Token storage token = _tokenIdTokenMap[tokenId];
+
+        token.setMessage(message);
+
+        token.setMessageWriter(_msgSender());
+    }
+
+    function setColors(uint tokenId, string[3] memory colors) external {
+        Token.Token storage token = _tokenIdTokenMap[tokenId];
+
+        token.setBackgroundColor(colors[0]);
+        token.setDateTextColor(colors[1]);
+        token.setMessageTextColor(colors[2]);
+    }
+
+    function getColors(uint tokenId) external view returns (string[3] memory) {
+        Token.Token memory token = _tokenIdTokenMap[tokenId];
+
+        string[3] memory colors;
+
+        colors[0] = token.backgroundColor;
+        colors[1] = token.dateTextColor;
+        colors[2] = token.messageTextColor;
+
+        return colors;
+    }
 }
 
