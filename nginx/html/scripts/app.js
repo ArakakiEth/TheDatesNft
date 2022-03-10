@@ -1,20 +1,24 @@
 class App extends EventTarget {
-  constructor() {
+  constructor(config) {
     super();
+
+    this.config = config;
+
+    this.contract = {};
 
     const walletAvailable = this.checkWallet();
 
     if (walletAvailable) {
       this.requestPolygonNetwork();
 
-      ethereum.on("networkChanged", (networkId) => {
+      this.config?.ethereum?.on("networkChanged", (networkId) => {
         this.dispatchEvent(new CustomEvent("NetworkChanged"));
       });
     }
   }
 
   checkWallet() {
-    if ("ethereum" in window) {
+    if (this.config?.ethereum) {
       this.dispatchEvent(new CustomEvent("WalletCheckSucceeded"));
 
       return true;
@@ -26,11 +30,11 @@ class App extends EventTarget {
   }
 
   async requestPolygonNetwork() {
-    if (ethereum.chainId === "0x89") {
+    if (this.config?.ethereum?.chainId === "0x89") {
       return this.dispatchEvent(new CustomEvent("NetworkCheckSucceeded"));
     }
 
-    const err = await ethereum.request({
+    const err = await this.config?.ethereum?.request({
       method: "wallet_switchEthereumChain",
       params: [
         {
@@ -46,6 +50,22 @@ class App extends EventTarget {
     } else {
       return this.dispatchEvent(new CustomEvent("NetworkCheckFailed"));
     }
+  }
+
+  async getTheDatesNftContract() {
+    const abiResponse = await fetch("../data/the-dates-nft-abi.json");
+
+    if (!abiResponse.ok) {
+      return this.dispatchEvent(new CustomEvent("TheDatesNftContractGetFailed"));
+    }
+
+    const abi = await abiResponse.json();
+
+    const web3 = this.config?.web3;
+
+    this.contract.TheDatesNft = new web3.eth.Contract(abi, this.config?.contractAddresses?.TheDatesNft);
+
+    return this.dispatchEvent(new CustomEvent("TheDatesNftContractGetSucceeded"));
   }
 }
 

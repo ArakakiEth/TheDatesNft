@@ -48,7 +48,13 @@
       const networkUnavailableLayer = document.querySelector("#network-unavailable-layer");
       const requestPolygonNetworkButton = document.querySelector("#request-polygon-network-button");
 
-      const app = new App();
+      const app = new App({
+        ethereum: ethereum,
+        web3: new Web3(ethereum),
+        contractAddresses: {
+          TheDatesNft: "0x579e536aa20a43122647aa470fc89913a1baae71",
+        },
+      });
 
       app.addEventListener("WalletCheckSucceeded", (event) => {
         walletUnavailableLayer.style.display = "none";
@@ -62,6 +68,8 @@
 
       app.addEventListener("NetworkCheckSucceeded", (event) => {
         networkUnavailableLayer.style.display = "none";
+
+        app.getTheDatesNftContract();
       });
 
       app.addEventListener("NetworkCheckFailed", (event) => {
